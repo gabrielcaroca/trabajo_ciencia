@@ -3,15 +3,12 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer, make_column_selector
 from src.transformers import cargar_y_limpiar_pitchfork
 
-def build_pitchfork_pipeline():
-    """
-    Construye un Pipeline de Scikit-Learn que integra la limpieza
-    y optimizacion de los datos de Pitchfork.
-    """
+from sklearn.preprocessing import FunctionTransformer
 
-    
-    pitchfork_pipe = Pipeline([
-        ('cleaner', cargar_y_limpiar_pitchfork())
+def build_pitchfork_pipeline():
+
+    return Pipeline([
+        ('cleaner', FunctionTransformer(lambda X: cargar_y_limpiar_pitchfork(db_path)))
     ])
 
     return pitchfork_pipe
