@@ -36,7 +36,7 @@ Aquí se presenta la variable score,su cantidad y su comparación con el año. E
 ![alt text](image-1.png)
 
 Se analizó la relación entre las variables numéricas para identificar posibles redundancias
-![imagen1](image.png)
+![alt text](image-4.png)
 
 ---
 ## 3. Metodología de Transformación
