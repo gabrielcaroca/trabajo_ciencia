@@ -9,7 +9,8 @@ cd trabajo_ciencia
 **Crea un entorno virtual e instala las dependencias:**
 ```
 python -m venv trabajo_ciencia
-google_ads\Scripts\activate
-pip install -r requirements.text
+trabajo_ciencia\Scripts\activate
+pip install -r requirements.txt
+
 ```
 
