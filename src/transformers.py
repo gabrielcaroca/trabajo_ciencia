@@ -1,38 +1,61 @@
+"""
+Custom Scikit-Learn transformers for the Pitchfork music reviews dataset.
+Handles text cleaning, missing values for categorical data, and feature engineering.
+"""
+
 import pandas as pd
-import numpy as np
-import sqlite3
+from sklearn.base import BaseEstimator, TransformerMixin
 
-def cargar_y_limpiar_pitchfork(db_path):
-    """
-    Funcion maestra para extraer, unir y limpiar las 6 tablas de Pitchfork.
-    """
-    conn = sqlite3.connect(db_path)
-    
-    # Extraccion
-    df_rev = pd.read_sql_query("SELECT * FROM reviews", conn)
-    df_gen = pd.read_sql_query("SELECT * FROM genres", conn)
-    df_lab = pd.read_sql_query("SELECT * FROM labels", conn)
-    df_con = pd.read_sql_query("SELECT * FROM content", conn)
-    df_art = pd.read_sql_query("SELECT * FROM artists", conn)
-    df_yrs = pd.read_sql_query("SELECT * FROM years", conn)
-    conn.close()
+class PitchforkCleanerTransformer(BaseEstimator, TransformerMixin):
+    """Cleans genres and labels, filling missing values with domain defaults."""
+    def fit(self, X, y=None):
+        return self
 
-    # Integracion (Joins)
-    df = df_rev.merge(df_gen, on='reviewid', how='left')
-    df = df.merge(df_lab, on='reviewid', how='left')
-    df = df.merge(df_yrs, on='reviewid', how='left')
-    df = df.merge(df_con, on='reviewid', how='left')
-    df = df.merge(df_art, on='reviewid', how='left', suffixes=('', '_extra'))
+    def transform(self, X):
+        X_copy = X.copy()
+        # Limpieza de géneros musicales y sellos discográficos
+        if 'genre' in X_copy.columns:
+            X_copy['genre'] = X_copy['genre'].fillna('unassigned').str.strip().str.lower()
+        if 'label' in X_copy.columns:
+            X_copy['label'] = X_copy['label'].fillna('independent').str.strip().str.lower()
+        return X_copy
 
-    # Limpieza Tecnica
-    df = df.drop_duplicates(subset=['reviewid']).copy()
-    df['genre'] = df['genre'].fillna('unassigned').str.strip().str.lower()
-    df['label'] = df['label'].fillna('independent').str.strip()
-    df['content'] = df['content'].str.strip()
-    
-    # Optimizacion de Memoria
-    df['score'] = df['score'].astype('float32')
-    df['pub_year'] = pd.to_numeric(df['pub_year'], downcast='integer')
-    df['genre'] = df['genre'].astype('category')
-    
-    return df
+    def set_output(self, transform=None):
+        """Protocol requirement for scikit-learn >= 1.2 to support pandas output."""
+        return self
+
+
+class ContentFeatureTransformer(BaseEstimator, TransformerMixin):
+    """Extracts text-based features like word count from the review content."""
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        X_copy = X.copy()
+        if 'content' in X_copy.columns:
+            X_copy['content'] = X_copy['content'].fillna('').str.strip()
+            # Feature Engineering: Calculamos qué tan larga es la reseña
+            X_copy['review_word_count'] = X_copy['content'].str.split().str.len()
+        return X_copy
+
+    def set_output(self, transform=None):
+        """Protocol requirement for scikit-learn >= 1.2 to support pandas output."""
+        return self
+
+
+class DropColumnsTransformer(BaseEstimator, TransformerMixin):
+    """Drops specified columns to prevent data leakage or remove raw text."""
+    def __init__(self, columns_to_drop=None):
+        self.columns_to_drop = columns_to_drop if columns_to_drop else []
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        X_copy = X.copy()
+        cols = [c for c in self.columns_to_drop if c in X_copy.columns]
+        return X_copy.drop(columns=cols)
+
+    def set_output(self, transform=None):
+        """Protocol requirement for scikit-learn >= 1.2 to support pandas output."""
+        return self
